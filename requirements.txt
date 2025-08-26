@@ -1,0 +1,10 @@
+langchain
+langchain-community
+langgraph
+matplotlib
+spacy
+networkx
+rapidfuzz
+scipy
+cvss
+mitreattack-python

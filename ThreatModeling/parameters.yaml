@@ -1,0 +1,9 @@
+ollama:
+  model: "mistral-nemo:12b-instruct-2407-q6_K"
+  temperature: 0.3
+  model_with_large_context: "mistral-nemo:12b-instruct-2407-q6_K"
+deepinfra:
+  model: "mistralai/Mistral-Nemo-Instruct-2407"
+  model_name: "mistral-nemo-full"
+  temperature: 0.3
+  max_new_tokens: 3000
