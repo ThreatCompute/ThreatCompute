@@ -130,7 +130,7 @@ Badges at the top reflect the status of the `main` branch. Coverage comes from d
 If you use ThreatCompute in academic work, cite the accompanying paper in `paper/`.
 
 ## 15. License
-See `LICENSE`.
+See `LICENSE` and `COPYRIGHT` for maintainer and licensing details.
 
 ---
 Feedback & issues welcome via GitHub Issues.
