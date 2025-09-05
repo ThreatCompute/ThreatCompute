@@ -1,0 +1,28 @@
+site_name: ThreatCompute Documentation
+site_description: Automated Threat Modeling & Attack Graph Framework for Kubernetes
+site_url: https://threatcompute.github.io/ThreatCompute/
+repo_name: ThreatCompute/ThreatCompute
+repo_url: https://github.com/ThreatCompute/ThreatCompute
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: installation.md
+      - Offline Mode: development/offline_mode.md
+  - Usage:
+      - Threat Modeling Pipeline: usage/threat_modeling.md
+      - Attack Graph Generation: usage/attack_graph.md
+      - Time To Compromise (TTC): usage/ttc.md
+  - Development:
+      - Contributing: development/contributing.md
+  - API Overview: api/overview.md
+theme:
+  name: readthedocs
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - codehilite
+extra:
+  offline_mode_env: TC_OFFLINE
+plugins:
+  - search

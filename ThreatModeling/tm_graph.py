@@ -255,15 +255,20 @@ def attack_paths(G):
     count = 0
     for source in G.nodes():
         for target in G.nodes():
-            if source != target:
-                paths = nx.all_simple_edge_paths(G, source=source, target=target)
-                for path in paths:
-                    if len(path) > 1:
-                        attributed_path = [
-                            (u, v, G.get_edge_data(u, v)["technique"]) for u, v in path
-                        ]
-                        print(attributed_path)
-                        count += 1
+            if source == target:
+                continue
+            paths = nx.all_simple_edge_paths(G, source=source, target=target)
+            for path in paths:
+                if len(path) <= 1:
+                    continue
+                attributed_path = []
+                for u, v in path:
+                    edge_data = G.get_edge_data(u, v)
+                    # Edge stores list of techniques under 'techniques'
+                    techniques = edge_data.get("techniques", []) if edge_data else []
+                    attributed_path.append((u, v, techniques))
+                print(attributed_path)
+                count += 1
     print(f"Number of paths: {count}")
 
 

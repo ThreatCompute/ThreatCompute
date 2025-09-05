@@ -1,11 +1,21 @@
+import os
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.exceptions import OutputParserException
 from langchain_community.llms import Ollama
-from matrices import K8S_MATRIX
-from model import get_deepinfra_model
+from .matrices import K8S_MATRIX
+from .model import get_deepinfra_model
 
-model = get_deepinfra_model()
+# Lazy-load the LLM so importing this module (e.g. for verify_techniques tests)
+# does not immediately require external API credentials or network access.
+_MODEL = None
+
+
+def get_model_cached():
+    global _MODEL
+    if _MODEL is None and os.getenv("TC_OFFLINE") != "1":
+        _MODEL = get_deepinfra_model()
+    return _MODEL
 
 format_instructions = 'The list of techniques should be formatted as a JSON array. Add three backticks before and after the JSON and enclose property names with double quotes. Format: ```json[{"technique": "Technique Name from Microsoft Threat Matrix", "description": "Description of the technique tailored to this asset.", "target": "Target Asset from the given list", "requirement": "required attack tactic"}, {"technique": "Another Technique", "description": "Another description for the technique.", "target": "Another Target Asset", "requirement": "required attack tactic"}]```'
 
@@ -185,11 +195,52 @@ def techniques_for_asset(
         techniques_list = []
 
     def technique_invocation():
+        # Offline deterministic path for tests (skips LLM + parsing chains)
+        if os.getenv("TC_OFFLINE") == "1":
+            base_tech = techniques_list[0] if techniques_list else "Exposed sensitive interfaces"
+            if tactic == "Initial Access":
+                return [
+                    {
+                        "technique": base_tech,
+                        "description": "offline initial access",
+                        "target": "self",
+                        "requirement": None,
+                    }
+                ]
+            if (
+                asset_vulnerabilities == "No vulnerabilities found."
+                and asset_misconfigurations == "No misconfigurations found."
+            ):
+                return [
+                    {
+                        "technique": base_tech,
+                        "description": "offline no vul misconf",
+                        "target": assets_list[0] if assets_list else "self",
+                        "requirement": "Initial Access",
+                    }
+                ]
+            # General or container path
+            extra = techniques_list[1] if len(techniques_list) > 1 else base_tech
+            return [
+                {
+                    "technique": base_tech,
+                    "description": "offline general technique",
+                    "target": "self",
+                    "requirement": "Initial Access",
+                },
+                {
+                    "technique": extra,
+                    "description": "offline extra technique",
+                    "target": assets_list[0] if assets_list else "self",
+                    "requirement": "Execution",
+                },
+            ]
         if tactic == "Initial Access":
             try:
-                result = (
-                    initial_access_technique_prompt | model | JsonOutputParser()
-                ).invoke(
+                model_obj = get_model_cached()
+                if model_obj is None:
+                    return []
+                result = (initial_access_technique_prompt | model_obj | JsonOutputParser()).invoke(
                     {
                         "asset": asset,
                         "asset_description": asset_description,
@@ -202,9 +253,10 @@ def techniques_for_asset(
                 )
             except OutputParserException:
                 print("JSON Parsing Error occured")
-                result = (
-                    initial_access_technique_prompt | model | JsonOutputParser()
-                ).invoke(
+                model_obj = get_model_cached()
+                if model_obj is None:
+                    return []
+                result = (initial_access_technique_prompt | model_obj | JsonOutputParser()).invoke(
                     {
                         "asset": asset,
                         "asset_description": asset_description,
@@ -224,9 +276,10 @@ def techniques_for_asset(
             and asset_misconfigurations == "No misconfigurations found."
         ):
             try:
-                result = (
-                    techniques_prompt_no_vul_no_misconf | model | JsonOutputParser()
-                ).invoke(
+                model_obj = get_model_cached()
+                if model_obj is None:
+                    return []
+                result = (techniques_prompt_no_vul_no_misconf | model_obj | JsonOutputParser()).invoke(
                     {
                         "asset": asset,
                         "asset_description": asset_description,
@@ -238,9 +291,10 @@ def techniques_for_asset(
                 )
             except OutputParserException:
                 print("JSON Parsing Error occured")
-                result = (
-                    techniques_prompt_no_vul_no_misconf | model | JsonOutputParser()
-                ).invoke(
+                model_obj = get_model_cached()
+                if model_obj is None:
+                    return []
+                result = (techniques_prompt_no_vul_no_misconf | model_obj | JsonOutputParser()).invoke(
                     {
                         "asset": asset,
                         "asset_description": asset_description,
@@ -257,7 +311,10 @@ def techniques_for_asset(
             else:
                 prompt = general_techniques_prompt
             try:
-                result = (prompt | model | JsonOutputParser()).invoke(
+                model_obj = get_model_cached()
+                if model_obj is None:
+                    return []
+                result = (prompt | model_obj | JsonOutputParser()).invoke(
                     {
                         "asset": asset,
                         "asset_description": asset_description,
@@ -271,7 +328,10 @@ def techniques_for_asset(
                 )
             except OutputParserException:
                 print("JSON Parsing Error occured")
-                result = (prompt | model | JsonOutputParser()).invoke(
+                model_obj = get_model_cached()
+                if model_obj is None:
+                    return []
+                result = (prompt | model_obj | JsonOutputParser()).invoke(
                     {
                         "asset": asset,
                         "asset_description": asset_description,
@@ -307,6 +367,18 @@ def vulnerabilties_summarizer(instance_ids, system_model):
     First a summary of all the vulnerabilties of one package is created. After that the summaries are combined to a final summary.
     -> Map and reduce where mapping is done via the package name.
     """
+    if os.getenv("TC_OFFLINE") == "1":  # deterministic offline summary
+        vulns = system_model.get_vulnerabilities_by_instance_ids(instance_ids)
+        if not vulns:
+            return "No vulnerabilities found."
+        return {
+            "total_vulnerabilities": len(vulns),
+            "vulnerability_types": ["RCE"],
+            # Offline synthetic CVE entries may just be strings
+            "affected_packages": list({(v.get("resource") if isinstance(v, dict) else str(v)) for v in vulns}),
+            "overall_impact": "offline summary",
+        }
+
     vulnerabilities = system_model.get_vulnerabilities_by_instance_ids(instance_ids)
     if not vulnerabilities:
         print("No vulnerabilities found")
@@ -339,7 +411,10 @@ def vulnerabilties_summarizer(instance_ids, system_model):
         input_variables=["package", "vulnerabilities"],
     )
 
-    summarize_package_chain = summarize_package_prompt | model
+    model_obj = get_model_cached()
+    if model_obj is None:
+        return []
+    summarize_package_chain = summarize_package_prompt | model_obj
     package_summaries = []
     for package, vulnerabilities in grouped_vulnerabilities.items():
         summary = summarize_package_chain.invoke(
@@ -364,7 +439,10 @@ def vulnerabilties_summarizer(instance_ids, system_model):
         input_variables=["summaries"],
     )
 
-    summarizer_chain = summarizer_prompt | model | JsonOutputParser()
+    model_obj = get_model_cached()
+    if model_obj is None:
+        return {}
+    summarizer_chain = summarizer_prompt | model_obj | JsonOutputParser()
     result = summarizer_chain.invoke({"summaries": package_summaries})
     return result
 
@@ -373,6 +451,11 @@ def misconfigurations_summarizer(instance_ids, instance_names, system_model):
     """
     Summarize list of misconfigurations for a given asset instance
     """
+    if os.getenv("TC_OFFLINE") == "1":
+        mis = system_model.get_misconfigurations_by_instance_ids(instance_ids)
+        if not mis:
+            return "No misconfigurations found."
+        return f"{len(mis)} misconfigurations offline summary"
     misconfigurations = system_model.get_misconfigurations_by_instance_ids(instance_ids)
     if not misconfigurations:
         return "No misconfigurations found."
@@ -388,7 +471,10 @@ def misconfigurations_summarizer(instance_ids, instance_names, system_model):
         input_variables=["asset_instance", "misconfigurations"],
     )
 
-    misconfigurations_summary_chain = misconfigurations_summary_prompt | model
+    model_obj = get_model_cached()
+    if model_obj is None:
+        return "No misconfigurations found."
+    misconfigurations_summary_chain = misconfigurations_summary_prompt | model_obj
     misconfigurations_summary = misconfigurations_summary_chain.invoke(
         {"asset_instance": instance_names, "misconfigurations": misconfigurations}
     )

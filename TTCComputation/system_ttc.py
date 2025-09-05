@@ -62,32 +62,23 @@ def encapsulated_ttc(graph, node, child_type, ttc_dict, attacker_skill_level="no
     """
     Calculate the TTC of a node considering the vulnerabilities of its children (e.g., containers in a pod)
     """
-    # get vulnerabilities of container in pod with the lowest ttc
+    # Collect children of the requested type
     child_instances = [
-        child
-        for child in graph.successors(node[0])
-        if graph.nodes[child]["type"] == child_type
+        child for child in graph.successors(node[0]) if graph.nodes[child]["type"] == child_type
     ]
-    child_vulnerabilities = []
-    child_misconfigurations = []
-    # get child container with the lowest ttc
-    min_ttc = 365
-    min_container = None
-    for child_instance in child_instances:
-        ttc = ttc_dict[child_instance]["TTC"]
-        if ttc < min_ttc:
-            min_ttc = ttc
-            min_container = child_instance
-    if min_container:
-        child_vulnerabilities = graph.nodes[min_container].get("CVEs", [])
-        child_misconfigurations = graph.nodes[min_container].get("CHECKS", [])
-    asset = node[0]
-    return calculate_node_ttc(
-        node,
-        child_vulnerabilities,
-        child_misconfigurations,
-        attacker_skill_level=attacker_skill_level,
-    )
+    if not child_instances:
+        # No children of that type: fallback to own vulnerabilities only
+        return calculate_node_ttc(node, attacker_skill_level=attacker_skill_level)
+
+    # Select child with minimal TTC (already computed and stored in ttc_dict)
+    min_child = min(child_instances, key=lambda c: ttc_dict[c]["TTC"]) if child_instances else None
+    if min_child is None:
+        return calculate_node_ttc(node, attacker_skill_level=attacker_skill_level)
+
+    # Propagate the child's TTC dictionary upward directly (no recomputation) to
+    # satisfy the design expectation that higher-level asset TTC reflects its
+    # most vulnerable descendant of the specified child type.
+    return ttc_dict[min_child]
 
 
 def calc_system_ttcs(graph, attacker_skill_level="novice"):

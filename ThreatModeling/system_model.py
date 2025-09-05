@@ -1,8 +1,10 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from langchain_core.prompts import PromptTemplate
 from .model import get_deepinfra_model
 import numpy as np
+import os
 
 
 class SystemModel(nx.DiGraph):
@@ -162,7 +164,13 @@ class SystemModel(nx.DiGraph):
             for node, attributes in self.nodes(data=True)
         }
 
-        # Define the order of categories for the multipartite layout
+        # Assign layer attribute for multipartite layout
+        for node in self.nodes():
+            self.nodes[node]["layer"] = type_to_level[types[node]]
+        pos = nx.multipartite_layout(
+            self, subset_key="layer", align="horizontal", scale=1
+        )
+        pos = {p: x_scaling(pos[p]) for p in pos}
         subsets = {
             "cluster": [node for node in self.nodes() if types[node] == "cluster"],
             "namespace": [node for node in self.nodes() if types[node] == "namespace"],
@@ -171,58 +179,62 @@ class SystemModel(nx.DiGraph):
             "RootShell": [node for node in self.nodes() if types[node] == "RootShell"],
             "Shell": [node for node in self.nodes() if types[node] == "Shell"],
         }
-        pos = nx.multipartite_layout(
-            self, subset_key=subsets, align="horizontal", scale=1
-        )
-        pos = {p: x_scaling(pos[p]) for p in pos}
-        if pos[subsets["cluster"][0]][1] < pos[subsets["namespace"][0]][1]:
-            # Swap the positions of the cluster and namespace nodes
+        if (
+            subsets["cluster"]
+            and subsets["namespace"]
+            and pos[subsets["cluster"][0]][1] < pos[subsets["namespace"][0]][1]
+        ):
             cluster_y = pos[subsets["cluster"][0]][1]
             namespace_y = pos[subsets["namespace"][0]][1]
             for node in subsets["cluster"]:
-                pos[node] = (pos[node][0], namespace_y)
+                pos[node] = np.array([pos[node][0], namespace_y])
             for node in subsets["namespace"]:
-                pos[node] = (pos[node][0], cluster_y)
+                pos[node] = np.array([pos[node][0], cluster_y])
 
-        if pos[subsets["Container"][0]][1] < pos[subsets["RootShell"][0]][1]:
-            # Swap the positions of the Container and Rootshell nodes
+        if (
+            subsets["Container"]
+            and subsets["RootShell"]
+            and pos[subsets["Container"][0]][1] < pos[subsets["RootShell"][0]][1]
+        ):
             container_y = pos[subsets["Container"][0]][1]
             rootshell_y = pos[subsets["RootShell"][0]][1]
             for node in subsets["Container"]:
-                pos[node] = (pos[node][0], rootshell_y)
+                pos[node] = np.array([pos[node][0], rootshell_y])
             for node in subsets["RootShell"]:
-                pos[node] = (pos[node][0], container_y)
+                pos[node] = np.array([pos[node][0], container_y])
 
-        if pos[subsets["Pod"][0]][1] < pos[subsets["Container"][0]][1]:
-            # Swap the positions of the Pod and Container nodes
+        if (
+            subsets["Pod"]
+            and subsets["Container"]
+            and pos[subsets["Pod"][0]][1] < pos[subsets["Container"][0]][1]
+        ):
             pod_y = pos[subsets["Pod"][0]][1]
             container_y = pos[subsets["Container"][0]][1]
             for node in subsets["Pod"]:
-                pos[node] = (pos[node][0], container_y)
+                pos[node] = np.array([pos[node][0], container_y])
             for node in subsets["Container"]:
-                pos[node] = (pos[node][0], pod_y)
+                pos[node] = np.array([pos[node][0], pod_y])
 
-        if pos[subsets["Shell"][0]][1] > pos[subsets["Container"][0]][1]:
+        if (
+            subsets["Shell"]
+            and subsets["Container"]
+            and subsets["RootShell"]
+            and pos[subsets["Shell"][0]][1] > pos[subsets["Container"][0]][1]
+        ):
             diff_container_rootshell = (
                 pos[subsets["Container"][0]][1] - pos[subsets["RootShell"][0]][1]
             )
             new_y = pos[subsets["RootShell"][0]][1] - diff_container_rootshell
             for node in subsets["Shell"]:
-                pos[node] = (pos[node][0], new_y)
+                pos[node] = np.array([pos[node][0], new_y])
 
         plt.figure(figsize=(30, 20))
         nx.draw(self, pos=pos, node_color=node_colors, node_size=700, with_labels=False)
-
-        # Rotate the node labels
         for label in labels:
             x, y = pos[label]
-            plt.text(
-                (x - 0.25), y, labels[label], fontsize=16, va="bottom", rotation=45
-            )
-
-        # Create legend
+            plt.text((x - 0.25), y, labels[label], fontsize=16, va="bottom", rotation=45)
         handles = [
-            plt.Line2D(
+            Line2D(
                 [0],
                 [0],
                 marker="o",
@@ -233,9 +245,7 @@ class SystemModel(nx.DiGraph):
             )
             for type_name, color in asset_to_color.items()
         ]
-        plt.legend(
-            handles=handles, title="Node Types", title_fontsize="28", fontsize="24"
-        )
+        plt.legend(handles=handles, title="Node Types", title_fontsize="28", fontsize="24")
         plt.savefig(f"{self.system_model_file}.pdf")
 
 
@@ -245,6 +255,18 @@ def analyze_asset_instances(
     """
     Analyze asset instances in the system model and add summary to the asset instance
     """
+    # Offline deterministic path for tests
+    if os.environ.get("TC_OFFLINE"):
+        relevant_nodes = [
+            (node, attributes)
+            for node, attributes in system_model.nodes(data=True)
+            if attributes["type"] == asset_type
+        ]
+        return {
+            node_id: {"analysis": f"Offline analysis for {asset_type} {node_id}"}
+            for node_id, _ in relevant_nodes
+        }
+
     model = get_deepinfra_model()
     relevant_nodes = [
         (node, attributes)
@@ -290,6 +312,8 @@ def summarize_asset_analyses(asset, analyses):
     """
     Summarize the analyses of an asset
     """
+    if os.environ.get("TC_OFFLINE"):
+        return f"Offline summary for {asset} with {len(analyses)} analyses"
     model = get_deepinfra_model()
     prompt = PromptTemplate(
         template=(

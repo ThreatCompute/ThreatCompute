@@ -46,7 +46,8 @@ class KUBE_TTC:
                     * cvss_score.get_value("PR")
                     * cvss_score.get_value("UI")
                 )
-                scores.append(Score(cvss_score.base_score, exploitability_score))
+                base_val = float(cvss_score.base_score or 0)
+                scores.append(Score(base_val, float(exploitability_score)))
             elif isinstance(cvss_score, cvss.CVSS2):
                 exploitability_score = (
                     D("20")
@@ -54,17 +55,20 @@ class KUBE_TTC:
                     * cvss_score.get_value("AC")
                     * cvss_score.get_value("Au")
                 )
-                scores.append(Score(cvss_score.base_score, exploitability_score))
+                base_val = float(cvss_score.base_score or 0)
+                scores.append(Score(base_val, float(exploitability_score)))
 
         for control in misconfigurations:
-            scores.append(Score(control["scoreFactor"], control["scoreFactor"]))
+            scores.append(Score(float(control["scoreFactor"]), float(control["scoreFactor"])))
 
         self.scores = scores
 
-        self.avg_exploitability = sum([score.esc for score in self.scores]) / len(
-            self.scores
+        self.avg_exploitability = float(
+            sum([float(score.esc) for score in self.scores]) / len(self.scores)
         )
-        self.max_exploitability = max([score.esc for score in self.scores])
+        self.max_exploitability = float(
+            max([float(score.esc) for score in self.scores])
+        )
 
     def default_m(self, s):
         if s == "novice":
@@ -131,16 +135,16 @@ class KUBE_TTC:
         return u_min_max_rounded
 
     def calc_t1(self):
-        """
-        Calculate t1, the time to tune an exploit
-        """
-        return float(self.c1 * 10 / self.max_exploitability)
+        """Calculate t1, the time to tune an exploit."""
+        if self.max_exploitability == 0:
+            return 0.0
+        return float(self.c1 * 10 / float(self.max_exploitability))
 
     def calc_t2(self, s):
-        """
-        Calculate t2, the time to develop a new exploit
-        """
-        return float(self.c2(s) * 10 / self.max_exploitability)
+        """Calculate t2, the time to develop a new exploit."""
+        if self.max_exploitability == 0:
+            return 0.0
+        return float(self.c2(s) * 10 / float(self.max_exploitability))
 
     def calc_process1(self, s):
         """
@@ -162,42 +166,23 @@ class KUBE_TTC:
         return t3 * (1 - self.calc_P1(s)) * self.calc_u(s)
 
     def calc_TTC(self, attacker_skill):
-        """
-        Calculate the Time to Compromise (TTC)
-
-        Returns:
-            float: The calculated TTC
-        """
+        """Calculate the Time to Compromise (TTC)."""
         t1 = self.calc_t1()
         P1 = self.calc_P1(attacker_skill)
-        t2 = float(self.c2(attacker_skill) * 10 / (self.max_exploitability))
+        t2 = self.calc_t2(attacker_skill)
         u = self.calc_u(attacker_skill)
         t3 = (1 / self.f(attacker_skill) - 0.5) * self.c3 + t2
-        ttc = t1 * P1 + t2 * (1 - P1) * (1 - u) + t3 * (1 - P1) * u
-        return ttc
+        return t1 * P1 + t2 * (1 - P1) * (1 - u) + t3 * (1 - P1) * u
 
     def calc_TTC_components(self, attacker_skill):
-        """
-        Calculate the Time to Compromise (TTC) and its components
-
-        Returns:
-            dict: The calculated TTC and its components
-        """
+        """Calculate the TTC and return component contributions."""
         t1 = self.calc_t1()
         P1 = self.calc_P1(attacker_skill)
-        t2 = float(self.c2(attacker_skill) * 10 / float((self.max_exploitability)))
+        t2 = self.calc_t2(attacker_skill)
         u = self.calc_u(attacker_skill)
         t3 = (1 / self.f(attacker_skill) - 0.5) * self.c3 + t2
         process1 = t1 * P1
         process2 = t2 * (1 - P1) * (1 - u)
         process3 = t3 * (1 - P1) * u
         ttc = process1 + process2 + process3
-        ttc_dict = {
-            "TTC": ttc,
-            "t1": t1,
-            "P1": P1,
-            "t2": t2,
-            "u": u,
-            "t3": t3,
-        }
-        return ttc_dict
+        return {"TTC": ttc, "t1": t1, "P1": P1, "t2": t2, "u": u, "t3": t3}

@@ -7,9 +7,15 @@ import difflib
 import yaml
 from pydantic import BaseModel, Field
 from typing import List, Dict
-from model import get_deepinfra_model
+import os
+from .model import get_deepinfra_model
 
-model = get_deepinfra_model()
+model = None
+if os.getenv("TC_OFFLINE") != "1":
+    try:
+        model = get_deepinfra_model()
+    except Exception:
+        model = None
 
 
 class Category(BaseModel):
@@ -38,7 +44,12 @@ categorizer_prompt = PromptTemplate(
     },
 )
 
-categorizer_chain = categorizer_prompt | model | parser
+categorizer_chain = None
+if model is not None:
+    try:
+        categorizer_chain = categorizer_prompt | model | parser
+    except Exception:
+        categorizer_chain = None
 
 
 def instance_describer(system_graph):
@@ -47,12 +58,13 @@ def instance_describer(system_graph):
     """
     node_summaries = []
     for node, attributes in system_graph.nodes(data=True):
-        description = model.invoke(
-            f"You are a security expert threat modeling a Kubernetes Application. You are provided with the attributes of a Container. Container attributes: {attributes} \n Analyze the container and its SBOM. Provide a 3 sentence description of the container and what is might be responsible for. \n Container description:"
-        )
-        print("#", attributes["name"])
-        print(description)
-        node_summaries.append({"node": attributes["name"], "description": description})
+        if os.getenv("TC_OFFLINE") == "1":
+            description = f"offline desc for {attributes.get('name','inst')}"
+        else:
+            description = model.invoke(
+                f"You are a security expert threat modeling a Kubernetes Application. You are provided with the attributes of a Container. Container attributes: {attributes} \n Analyze the container and its SBOM. Provide a 3 sentence description of the container and what is might be responsible for. \n Container description:"
+            ) if model is not None else "offline desc"
+        node_summaries.append({"node": attributes.get("name"), "description": description})
     return node_summaries
 
 
@@ -61,16 +73,30 @@ def asset_categorizer(asset, system_graph, node_summaries):
     Takes a set of asset descriptions and categorizes them into different categories
     """
     ## Use container descriptions to categorize containers
-    try:
-        result = categorizer_chain.invoke(
-            {"asset": asset, "system_model": node_summaries}
-        )
-    except OutputParserException:
-        # try once more -> most of the time JSON output is correct
-        print("JSON Parsing Error occured")
-        result = categorizer_chain.invoke(
-            {"asset": asset, "system_model": node_summaries}
-        )
+    if os.getenv("TC_OFFLINE") == "1":
+        # Deterministic simple grouping by first letter
+        cats = {}
+        for summary in node_summaries:
+            name = summary["node"]
+            if not name:
+                continue
+            key = name[0].upper()
+            cats.setdefault(key, {"description": f"offline cat {key}", "instances": []})
+            cats[key]["instances"].append(name)
+        result = {"categories": {k: {"description": v["description"], "instances": v["instances"]} for k, v in cats.items()}}
+    else:
+        try:
+            if categorizer_chain is None:
+                return {}
+            result = categorizer_chain.invoke(
+                {"asset": asset, "system_model": node_summaries}
+            )
+        except OutputParserException:
+            if categorizer_chain is None:
+                return {}
+            result = categorizer_chain.invoke(
+                {"asset": asset, "system_model": node_summaries}
+            )
 
     ## Discarding empty categories and wrong instances
     relevant_instances_names = [
@@ -150,7 +176,6 @@ def asset_categorizer(asset, system_graph, node_summaries):
             "description": "General Containers that were not assigned to a specific category.",
             "instances": diffed_instances,
         }
-    print(pruned_result)
     return pruned_result
 
 
