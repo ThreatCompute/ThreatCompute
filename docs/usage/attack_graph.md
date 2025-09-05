@@ -26,7 +26,7 @@ Shortest path = minimal sum of TTC over unique target instances in a successful 
 sp = ag.get_shortest_path()
 if sp:
 	for step in sp:
-		print(step["technique"]["tactic"], step["technique"]["technique"]) 
+		print(step["technique"]["tactic"], step["technique"]["technique"])
 ```
 
 See also: [Advanced Attack Graph Usage](attack_graph_advanced.md).
