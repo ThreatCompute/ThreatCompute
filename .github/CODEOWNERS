@@ -1,0 +1,9 @@
+# CODEOWNERS defines individuals or teams responsible for code in this repository.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# Lines beginning with # are comments.
+
+# Global default owners (listed in order of review request precedence)
+* @muscariello @annawimbauer @castorche
+
+# Optional: docs ownership (uncomment and adjust if a docs team emerges)
+docs/** @muscariello @annawimbauer @@castorche
