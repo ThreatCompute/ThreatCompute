@@ -16,3 +16,21 @@ print(result.keys())  # dict: assets, tactics, techniques
   "techniques": {"Container": {"CatA": {"Execution": [{"technique": "ExploitX", "target": "cluster"}]}}}
 }
 ```
+
+## Offline vs Online
+
+| Mode | Trigger | Techniques | Summaries |
+|------|---------|-----------|-----------|
+| Online | Default (no `TC_OFFLINE`) | LLM generated | Natural language |
+| Offline | `TC_OFFLINE=1` | Deterministic synthetic | Structured placeholders |
+
+Set `TC_OFFLINE=1` in CI for reproducibility.
+
+## Building Graph for Visualization
+
+```python
+from ThreatModeling import tm_graph
+G = tm_graph.tmr_to_graph(result)
+tm_graph.attack_paths(G)
+```
+

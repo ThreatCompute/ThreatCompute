@@ -16,13 +16,40 @@ nav:
       - Contributing: development/contributing.md
   - API Overview: api/overview.md
 theme:
-  name: readthedocs
+  name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: blue
+      accent: indigo
+  logo: images/logo.png
+  favicon: images/logo.png
 markdown_extensions:
   - toc:
-      permalink: true
+    permalink: true
   - admonition
   - codehilite
+  - tables
+  - attr_list
+  - def_list
+  - footnotes
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.critic
+  - pymdownx.tasklist:
+    custom_checkbox: true
 extra:
   offline_mode_env: TC_OFFLINE
 plugins:
   - search
+  - tags
+  - git-revision-date-localized:
+      fallback_to_build_date: true
