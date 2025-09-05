@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install mkdocs mkdocs-material
+          pip install mkdocs mkdocs-material mkdocs-git-revision-date-localized-plugin
           # If a future extras group is added (e.g. .[docs]) replace above with: pip install .[docs]
 
       - name: Build site
