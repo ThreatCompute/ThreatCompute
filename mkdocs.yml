@@ -31,7 +31,7 @@ theme:
   favicon: images/logo.png
 markdown_extensions:
   - toc:
-    permalink: true
+      permalink: true
   - admonition
   - codehilite
   - tables
@@ -45,7 +45,7 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.critic
   - pymdownx.tasklist:
-    custom_checkbox: true
+      custom_checkbox: true
 extra:
   offline_mode_env: TC_OFFLINE
 plugins:
