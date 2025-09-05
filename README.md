@@ -7,6 +7,7 @@ Automated Threat Modeling & Attack Graph Generation for Kubernetes using LLM-ass
 [![CI](https://github.com/ThreatCompute/ThreatCompute/actions/workflows/ci.yaml/badge.svg)](https://github.com/ThreatCompute/ThreatCompute/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/ThreatCompute/ThreatCompute/branch/main/graph/badge.svg)](https://codecov.io/gh/ThreatCompute/ThreatCompute)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://threatcompute.github.io/ThreatCompute/)
+[![Release](https://img.shields.io/github/v/release/ThreatCompute/ThreatCompute?display_name=tag&sort=semver)](https://github.com/ThreatCompute/ThreatCompute/releases/latest)
 
 </div>
 
