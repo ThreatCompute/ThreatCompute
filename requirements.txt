@@ -8,3 +8,5 @@ rapidfuzz
 scipy
 cvss
 mitreattack-python
+pytest
+pytest-cov
