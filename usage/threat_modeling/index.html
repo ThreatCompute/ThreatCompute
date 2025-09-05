@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://threatcompute.github.io/ThreatCompute/usage/threat_modeling/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Threat Modeling Pipeline - ThreatCompute Documentation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Threat Modeling Pipeline";
+        var mkdocs_page_input_path = "usage/threat_modeling.md";
+        var mkdocs_page_url = "/ThreatCompute/usage/threat_modeling/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> ThreatCompute Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/offline_mode/">Offline Mode</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Usage</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Threat Modeling Pipeline</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#output-structure-simplified">Output Structure (Simplified)</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../attack_graph/">Attack Graph Generation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../ttc/">Time To Compromise (TTC)</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/contributing/">Contributing</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../api/overview/">API Overview</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">ThreatCompute Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Usage</li>
+      <li class="breadcrumb-item active">Threat Modeling Pipeline</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/ThreatCompute/ThreatCompute/edit/master/docs/usage/threat_modeling.md">Edit on ThreatCompute/ThreatCompute</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="threat-modeling-pipeline">Threat Modeling Pipeline<a class="headerlink" href="#threat-modeling-pipeline" title="Permanent link">&para;</a></h1>
+<p>The pipeline loads a system model graph (GML), analyzes assets, categorizes containers, derives tactics, and generates techniques.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ThreatModeling.threat_model_creator</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_threat_model</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">build_threat_model</span><span class="p">(</span><span class="s2">&quot;data/system_model_MYAPP_trivy.gml&quot;</span><span class="p">,</span> <span class="n">application</span><span class="o">=</span><span class="s2">&quot;MYAPP&quot;</span><span class="p">,</span> <span class="n">write_results</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># dict: assets, tactics, techniques</span>
+</code></pre></div>
+
+<h2 id="output-structure-simplified">Output Structure (Simplified)<a class="headerlink" href="#output-structure-simplified" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;Container&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;categories&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;CatA&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]}}}},</span>
+<span class="w">  </span><span class="nt">&quot;tactics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;Container&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;tactic&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Initial Access&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">}]},</span>
+<span class="w">  </span><span class="nt">&quot;techniques&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;Container&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;CatA&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;Execution&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;technique&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ExploitX&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cluster&quot;</span><span class="p">}]}}}</span>
+<span class="p">}</span>
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../development/offline_mode/" class="btn btn-neutral float-left" title="Offline Mode"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../attack_graph/" class="btn btn-neutral float-right" title="Attack Graph Generation">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/ThreatCompute/ThreatCompute" class="fa fa-code-fork" style="color: #fcfcfc"> ThreatCompute/ThreatCompute</a>
+        </span>
+    
+    
+      <span><a href="../../development/offline_mode/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../attack_graph/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
