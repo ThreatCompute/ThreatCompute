@@ -128,7 +128,10 @@ Badges at the top reflect the status of the `main` branch. Coverage comes from d
 - Visualization enhancements (attack path overlays)
 
 ## 14. Citation
-If you use ThreatCompute in academic work, cite the accompanying paper in `paper/`.
+If you use ThreatCompute in academic work, cite the accompanying paper
+
+A. Wimbauer, L. Muscariello, J. Samain et al., "ThreatCompute: Leveraging LLMs for Automated Threat Modeling of Cloud-Native Applications" ACM Cloud Computing Security Workshop, ACM CCS, October 2025, Taipei, Taiwan
+https://doi.org/10.1145/3733812.3765533
 
 ## 15. License
 See `LICENSE` and `COPYRIGHT` for maintainer and licensing details.
